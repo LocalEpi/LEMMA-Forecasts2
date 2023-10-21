@@ -1,4 +1,4 @@
-setwd("~/Documents/GitHub/LEMMA-Forecasts/")
+setwd("~/Documents/GitHub/LEMMA-Forecasts2/")
 library(data.table)
 devtools::load_all("LEMMA.forecasts")
 
@@ -157,7 +157,7 @@ fwrite(effective_contact_rate_multiplier, file = "Misc/effective_contact_rate_mu
 source("~/Dropbox (UC Berkeley Biostat)/LEMMA_shared/JS code branch/omicron regions.R")
 # source("~/Dropbox (UC Berkeley Biostat)/LEMMA_shared/JS code branch/counties of concern.R")
 concern <- NULL
-source("~/Dropbox (UC Berkeley Biostat)/LEMMA_shared/JS code branch/omicron email.R")
+# source("~/Dropbox (UC Berkeley Biostat)/LEMMA_shared/JS code branch/omicron email.R")
 
 PlotOmicron(hosp_dt, county_set = intersect(county_set, hosp_dt[, county]), write_pdf = T, plot_icu_rt = T, diagnostic = T, filestr_in = "~/Documents/OmicronSim/all CA incl ICU.pdf")
 
