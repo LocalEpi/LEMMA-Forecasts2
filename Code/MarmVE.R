@@ -24,6 +24,11 @@ MK <- function(nabs_in, frac, omicron) {
   return(dt_out)
 }
 
+Get1 <- function(zz) {
+  stopifnot(uniqueN(zz) == 1)
+  zz[1]
+}
+
 #if waned, divide by 8.06
 #if omicron, divide by 30 [if this changes, need to adjust nabs for booster]
 #if delta, divide by 2.74 [overstates booster?]
