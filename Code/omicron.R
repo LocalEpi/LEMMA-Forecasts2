@@ -1,4 +1,3 @@
-setwd("~/Documents/GitHub/LEMMA-Forecasts2/")
 #if LEMMA is not already installed:
 #devtools::install_github("LocalEpi/LEMMA")
 
@@ -21,13 +20,15 @@ county_set <- c("Alameda", "Amador", "Butte", "Contra Costa", "Fresno", "Humbold
 
 if (F) {
   county.dt <- GetCountyData()
+  saveRDS(county.dt, "Inputs/savedCountyData.rds")
 } else {
   county.dt <- readRDS("Inputs/savedCountyData.rds")
 }
 
-county_set <- "Los Angeles" #temp!
-
-rerun_set <- NULL #If this is not empty, run only this set, use "Temp/forecast_list.rds" for the rest #use NULL for no
+#Use this if some counties don't converge
+#If rerun_set is not NULL, run only this set, use "Temp/forecast_list.rds" for the rest
+rerun_set <- NULL
+# rerun_set <- c("Butte", "Fresno")
 
 if (!is.null(rerun_set)) {
   cat("USING RERUN SET!\n")
@@ -132,8 +133,6 @@ RunCounty <- function(county1) {
   inputs$internal.args$intial_infected <- initial_infected
 
   inputs$internal.args$info <- county1
-saveRDS(inputs, "~/Documents/OmicronSim/new-inputs.rds")
-# stop("---")
   r <- LEMMA:::CredibilityInterval(inputs)
   z <- extract(r$fit.extended)
   out <- NULL
@@ -154,12 +153,12 @@ clearLoggers()
 addDefaultFileLogger(logfile)
 
 if (is.null(rerun_set)) {
-  forecast_list <- lapply(county_set, RunCounty)
+  forecast_list <- sapply(county_set, RunCounty, simplify = F)
 } else {
-  stop("code this")
-  #try setting 10% of values more than 2 months ago to NA?
+  #Try fixing convergence problem by setting 10% of dates at least 60 days ago to NA
+  county.dt[date > as.Date("2022/2/1") & date < (max(date) - 60) & runif(.N) < 0.1, c("hosp.conf", "hosp.pui", "cases.conf", "cases.pui") := list(NA, NA, NA, NA)]
+
   forecast_list <- readRDS("Temp/forecast_list.rds")
-  names(forecast_list) <- county_set #names aren't saved
   for (i in rerun_set) {
     forecast_list[[i]] <- RunCounty(county1 = i)
   }
