@@ -133,7 +133,7 @@ RunCounty <- function(county1) {
 
   inputs$internal.args$info <- county1
 saveRDS(inputs, "~/Documents/OmicronSim/new-inputs.rds")
-stop("---")
+# stop("---")
   r <- LEMMA:::CredibilityInterval(inputs)
   z <- extract(r$fit.extended)
   out <- NULL
@@ -147,6 +147,11 @@ stop("---")
   return(out)
 }
 
+library(ParallelLogger)
+logfile <- "Temp/logger.txt"
+unlink(logfile)
+clearLoggers()
+addDefaultFileLogger(logfile)
 
 if (is.null(rerun_set)) {
   forecast_list <- lapply(county_set, RunCounty)
@@ -160,6 +165,8 @@ if (is.null(rerun_set)) {
   }
 }
 
+ParallelLogger::logInfo("done")
+unregisterLogger(1)
 
 hosp_dt <- rbindlist(forecast_list)
 hosp_dt[, hosp_census_for_covid := hosp_census_with_covid * (1 - frac_incidental_omicron)]

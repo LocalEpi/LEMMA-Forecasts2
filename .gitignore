@@ -1,5 +1,6 @@
 ~*
-Temp
+Temp/
 .Rhistory
 .Rproj.user
 .Renviron
+Inputs/county population by age.rds
