@@ -1,0 +1,11 @@
+LEMMA notes
+
+need to copy:
+~/Dropbox/DELTAONLY_Forecasts/
+"~/Documents/OmicronSim/vax_", county1, ".rds"
+
+note change:
+SFresidents_and_nonresidents now San Francisco
+
+reset iter in CAcounties to 2000, warmup to 1000
+
