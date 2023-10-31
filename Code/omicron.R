@@ -8,6 +8,8 @@ library(readxl)
 library(LEMMA)
 library(matrixStats)
 source("Code/MarmVE.R")
+source("Code/GetCountyData.R")
+source("Code/PlotOmicron.R")
 
 county_set <- c("Alameda", "Amador", "Butte", "Contra Costa", "Fresno", "Humboldt",
                 "Imperial", "Kern", "Kings", "Lake", "Los Angeles", "Madera",
@@ -18,17 +20,18 @@ county_set <- c("Alameda", "Amador", "Butte", "Contra Costa", "Fresno", "Humbold
                 "Solano", "Sonoma", "Stanislaus", "Tehama", "Tulare",
                 "Tuolumne", "Ventura", "Yolo", "Yuba")
 
-if (F) {
-  county.dt <- GetCountyData()
-  saveRDS(county.dt, "Inputs/savedCountyData.rds")
+if (T) {
+  county_dt <- GetCountyData()
+  saveRDS(county_dt, "Inputs/savedCountyData.rds")
 } else {
-  county.dt <- readRDS("Inputs/savedCountyData.rds")
+  county_dt <- readRDS("Inputs/savedCountyData.rds")
 }
+county_dt_orig <- copy(county_dt)
 
 #Use this if some counties don't converge
 #If rerun_set is not NULL, run only this set, use "Temp/forecast_list.rds" for the rest
 rerun_set <- NULL
-# rerun_set <- c("Butte", "Fresno")
+# rerun_set <- c("Riverside")
 
 if (!is.null(rerun_set)) {
   cat("USING RERUN SET!\n")
@@ -49,7 +52,7 @@ omicron_growth <- 0.27
 initial_omicron_fraction <- 0.07
 start_date <- as.Date("2021/12/7")
 day0 <- start_date - 1
-end_date <- county.dt[!is.na(hosp.conf), max(date) + 60]
+end_date <- county_dt[!is.na(hosp.conf), max(date) + 60]
 nt <- end_date - start_date + 1
 initial_conditions <- readRDS("Inputs/initial_conditions.rds")
 
@@ -101,7 +104,7 @@ RunCounty <- function(county1) {
 
   frac_hosp_lemma <- frac_hosp_lemma / (1 + frac_incidental_delta)
 
-  delta <- county.dt[county == county1 & date >= as.Date("2021/12/1") & date <= as.Date("2021/12/7"), mean(hosp.conf)]
+  delta <- county_dt[county == county1 & date >= as.Date("2021/12/1") & date <= as.Date("2021/12/7"), mean(hosp.conf)]
 
   holiday_set <- c(seq.Date(as.Date("2021/12/24"), as.Date("2022/1/1"), by = "day"), as.Date(c("2022/4/16", "2022/4/17", "2022/5/28", "2022/5/29", "2022/5/30", "2022/7/2", "2022/7/3", "2022/7/4", "2022/9/3", "2022/9/4", "2022/9/5", "2022/10/28", "2022/10/29", "2022/10/31", "2022/11/24", "2022/11/25", "2022/11/26", "2022/11/27")), seq.Date(as.Date("2022/12/24"), as.Date("2023/1/1"), by = "day"))
   t_holiday <- as.numeric(holiday_set - day0)
@@ -117,16 +120,16 @@ RunCounty <- function(county1) {
   #in LEMMA.stan, hosp_frac_omicron_0/case_frac_omicron_0 are misnamed hosp_frac_delta_0/case_frac_delta_0
   inputs$omicron <- c(as.list(data.table(frac_hosp_lemma, VE_infection, VE_infection_delta, VE_severe_given_infection_0 = VE_severe_given_infection, omicron_recovered_booster_scale, booster_VE_infection, booster_VE_severe_given_infection, frac_incidental_omicron, hosp_frac_delta_0 = hosp_frac_omicron_0, case_frac_delta_0 = case_frac_omicron_0, omicron_growth, nholiday, mu_beta_holiday, sigma_beta_holiday)), list(num_boosters = num_boosters, t_holiday = t_holiday))
 
-  inputs$obs.data <- county.dt[county == county1 & date > start_date]
+  inputs$obs.data <- county_dt[county == county1 & date > start_date]
   inputs$obs.data[date == min(date), cases.conf := NA]
 
   inputs$model.inputs$total.population <- population
   inputs$internal.args$simulation.start.date <- day0
   inputs$model.inputs$end.date <- end_date
 
-  inputs$interventions[.N, t_inter := county.dt[!is.na(hosp.conf), max(date) + 1]]
+  inputs$interventions[.N, t_inter := county_dt[!is.na(hosp.conf), max(date) + 1]]
 
-  delta_cases <- county.dt[county == county1 & date >= as.Date("2021/12/1") & date <= as.Date("2021/12/7"), mean(cases.conf, na.rm = T)]
+  delta_cases <- county_dt[county == county1 & date >= as.Date("2021/12/1") & date <= as.Date("2021/12/7"), mean(cases.conf, na.rm = T)]
   inputs$params <- rbind(inputs$params,
                          data.table(name = "hosp_delta", mu = delta, sigma = delta * 0.3),
                          data.table(name = "cases_delta", mu = delta_cases, sigma = delta_cases * 0.3))
@@ -153,10 +156,14 @@ clearLoggers()
 addDefaultFileLogger(logfile)
 
 if (is.null(rerun_set)) {
-  forecast_list <- sapply(county_set, RunCounty, simplify = F)
+  forecast_list <- list()
+  for (i in county_set) {
+    try({forecast_list[[i]] <- RunCounty(county1 = i)})
+  }
+  names(forecast_list) <- county_set
 } else {
   #Try fixing convergence problem by setting 10% of dates at least 60 days ago to NA
-  county.dt[date > as.Date("2022/2/1") & date < (max(date) - 60) & runif(.N) < 0.1, c("hosp.conf", "hosp.pui", "cases.conf", "cases.pui") := list(NA, NA, NA, NA)]
+  county_dt[date > as.Date("2022/2/1") & date < (max(date) - 60) & runif(.N) < 0.1, c("hosp.conf", "hosp.pui", "cases.conf", "cases.pui") := list(NA, NA, NA, NA)]
 
   forecast_list <- readRDS("Temp/forecast_list.rds")
   for (i in rerun_set) {
@@ -182,9 +189,8 @@ hosp_dt[county == "Total", Rt := total_rt]
 hosp_dt$pop <- hosp_dt$weight <- NULL
 
 fwrite(hosp_dt[, .(date, county, quantile, hosp_census_with_covid, hosp_census_for_covid, cases, Rt)], "Forecasts/All_CA_county_Forecasts.csv")
-
 saveRDS(forecast_list, "Temp/forecast_list.rds")
-
+PlotOmicron(hosp_dt, county_dt_orig, "Temp/All_CA_county_Forecasts.pdf")
 
 
 
