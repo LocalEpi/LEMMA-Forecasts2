@@ -3,9 +3,7 @@ This reposistory containts forecasts from the LEMMA model starting October 2023.
 
 Older LEMMA forecasts are in the LEMMA-Forecasts repo. https://github.com/LocalEpi/LEMMA-Forecasts
 
-The main LEMMA sites are
-
-https://localepi.github.io/LEMMA/  
+The main LEMMA site is
 https://github.com/LocalEpi/LEMMA
 
 
