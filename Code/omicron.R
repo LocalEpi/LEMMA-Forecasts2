@@ -190,7 +190,7 @@ hosp_dt$pop <- hosp_dt$weight <- NULL
 
 fwrite(hosp_dt[, .(date, county, quantile, hosp_census_with_covid, hosp_census_for_covid, cases, Rt)], "Forecasts/All_CA_county_Forecasts.csv")
 saveRDS(forecast_list, "Temp/forecast_list.rds")
-PlotOmicron(hosp_dt, county_dt_orig, "Temp/All_CA_county_Forecasts.pdf")
+PlotOmicron(hosp_dt, county_dt_orig, "Forecasts/All_CA_county_Forecasts.pdf")
 
 
 

@@ -3,7 +3,7 @@ GetCountyData <- function() {
   county_dt <- county_dt[, .(county, date = as.Date(todays_date), hosp.conf = hospitalized_covid_confirmed_patients)]
   county_dt[date %in% as.Date(c("2023-05-11", "2023-05-12")), hosp.conf := NA] #data problems
 
-  cases <- data.table::fread("https://data.chhs.ca.gov/dataset/f333528b-4d38-4814-bebb-12db1f10f535/resource/046cdd2b-31e5-4d34-9ed3-b48cdbc4be7a/download/covid19cases_test.csv")[area_type == "County", .(date = as.Date(date), county = area, cases = as.double(cases))]
+  cases <- data.table::fread("https://data.chhs.ca.gov/dataset/f333528b-4d38-4814-bebb-12db1f10f535/resource/046cdd2b-31e5-4d34-9ed3-b48cdbc4be7a/download/covid19cases_test.csv")[area_type == "County" & !is.na(date), .(date = as.Date(date), county = area, cases.conf = as.double(cases))]
 
   cases <- cases[date >= as.Date("2021/11/1") & date < (max(date) - 5), ]
 
